@@ -1,0 +1,10 @@
+#!/bin/bash
+
+GIT=$GIT_HOME/git
+
+if [ $1 == "cush" ]
+then
+	$GIT commit -a && $GIT pull && $GIT push
+else
+	$GIT $@
+fi

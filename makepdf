@@ -1,0 +1,61 @@
+#!/bin/bash
+
+EXPECTED_ARGS=1
+ACTUAL_ARGS=$#
+MAX_ARGS=2
+LOGFILE="makepdf.log"
+BIB='bib'
+TOC='toc'
+
+if [ $ACTUAL_ARGS -lt $EXPECTED_ARGS ]
+then
+	for x in *.tex
+	do
+		exec 1>$LOGFILE
+		pdflatex -halt-on-error $x;
+
+		if [ $? -ne 0 ]
+		then
+			echo "Compile error with $x. Check log file." >&2
+			rm -f *.aux
+			exit 1
+		fi
+		# Clean
+		rm -f *.log *.aux
+	done
+else
+	IFS='.' read -ra ADDR <<< "$1"
+	FILENAME="${ADDR[0]}"
+
+	if [ ! -f $FILENAME.tex ]
+	then
+		echo "File $FILENAME.tex does not exist."
+		exit 1
+	fi
+
+	exec 1>$LOGFILE
+
+	pdflatex -halt-on-error $FILENAME.tex;
+
+	if [ $? -ne 0 ]
+	then
+		echo "Compile error. Check log file." >&2
+		rm -f *.aux
+		exit 1
+	fi
+
+	if [ $ACTUAL_ARGS -eq $MAX_ARGS ]
+	then
+		if [ $2 == $TOC ]
+		then
+			pdflatex $FILENAME.tex
+		elif [ $2 == $BIB ]
+		then
+			bibtex $FILENAME && pdflatex $FILENAME.tex && pdflatex $FILENAME.tex
+		fi
+	fi
+	# Clean
+	rm -f *.log *.logx *.aux *.bbl *.blg
+fi
+
+exec 1>&2

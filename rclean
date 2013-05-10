@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# Recursively remove all files 
+# set in script clean (by force!).
+
+function rclean()
+{
+		clean -f
+
+	for x in *
+	do
+		if [ -d $x ]; then
+			cd $x
+			rclean
+			cd $b
+		fi
+	done
+}
+
+b=".."
+rclean

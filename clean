@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Cleans the current dir of
+# chosen file types.
+# If no arg is given it will
+# ask for every file.
+
+ARG='-i'
+
+if [ $# -ge 1 ]
+then
+	ARG=$1
+fi
+
+rm $ARG *.o *.log *.aux *.pdf
