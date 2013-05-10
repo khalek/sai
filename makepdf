@@ -5,24 +5,48 @@ ACTUAL_ARGS=$#
 MAX_ARGS=2
 LOGFILE="makepdf.log"
 BIB='bib'
-TOC='toc'
+TOC='2x'
+
+function clean {
+	rm -f *.aux *.bbl *.blg *.toc
+}
+
+function compile {
+	exec 1>$LOGFILE
+
+	pdflatex -halt-on-error $1.tex
+
+	if [ $? -ne 0 ]
+	then
+		echo "Compile error. Check log file." >&2
+		clean
+		exit 1
+	fi
+}
+
+function compile_toc {
+	for (( i=0; i<2; i++ ))
+	do
+		compile $1
+	done
+}
+
+function compile_bib {
+	compile $1
+	bibtex $1
+	compile_toc $1
+}
+
+function rec_compile {
+	for x in *.tex
+	do
+		compile $x
+	done
+}
 
 if [ $ACTUAL_ARGS -lt $EXPECTED_ARGS ]
 then
-	for x in *.tex
-	do
-		exec 1>$LOGFILE
-		pdflatex -halt-on-error $x;
-
-		if [ $? -ne 0 ]
-		then
-			echo "Compile error with $x. Check log file." >&2
-			rm -f *.aux
-			exit 1
-		fi
-		# Clean
-		rm -f *.log *.aux
-	done
+	rec_compile		
 else
 	IFS='.' read -ra ADDR <<< "$1"
 	FILENAME="${ADDR[0]}"
@@ -33,29 +57,22 @@ else
 		exit 1
 	fi
 
-	exec 1>$LOGFILE
-
-	pdflatex -halt-on-error $FILENAME.tex;
-
-	if [ $? -ne 0 ]
-	then
-		echo "Compile error. Check log file." >&2
-		rm -f *.aux
-		exit 1
-	fi
-
 	if [ $ACTUAL_ARGS -eq $MAX_ARGS ]
 	then
 		if [ $2 == $TOC ]
 		then
-			pdflatex $FILENAME.tex
+			compile_toc $FILENAME
 		elif [ $2 == $BIB ]
 		then
-			bibtex $FILENAME && pdflatex $FILENAME.tex && pdflatex $FILENAME.tex
+			compile_bib $FILENAME
 		fi
+	else
+		compile $FILENAME
 	fi
-	# Clean
-	rm -f *.log *.logx *.aux *.bbl *.blg
 fi
+
+clean
+
+rm -f *.log
 
 exec 1>&2
